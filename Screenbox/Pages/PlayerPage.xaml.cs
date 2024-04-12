@@ -433,8 +433,16 @@ namespace Screenbox.Pages
             }
         }
 
-        private void VideoView_OnClick(object sender, RoutedEventArgs e)
+        private void VideoView_PointerPressed(object sender, PointerRoutedEventArgs e)
         {
+            if (e.Pointer.PointerDeviceType == Windows.Devices.Input.PointerDeviceType.Mouse)
+            {
+                Windows.UI.Input.PointerPointProperties properties = e.GetCurrentPoint(this).Properties;
+                if (properties.IsRightButtonPressed)
+                {
+                    return;
+                }
+            }
             if (!ViewModel.OnPlayerClick())
             {
                 PlayerControls.FocusFirstButton();
