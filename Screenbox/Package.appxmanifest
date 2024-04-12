@@ -6,11 +6,12 @@
   xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10"
   xmlns:uap3="http://schemas.microsoft.com/appx/manifest/uap/windows10/3"
   xmlns:uap5="http://schemas.microsoft.com/appx/manifest/uap/windows10/5"
-  IgnorableNamespaces="uap mp uap3">
+  xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities"
+  IgnorableNamespaces="uap mp uap3 rescap">
 
   <Identity
     Name="Screenbox"
-    Publisher="CN=ABCDF790-DBE4-48F7-8204-32FCB69ADF9C"
+    Publisher="CN=GuaiYiHu"
     Version="1.0.0.0" />
 
   <mp:PhoneIdentity PhoneProductId="13f69037-4fca-4b86-a6f5-a77c0969d41a" PhonePublisherId="00000000-0000-0000-0000-000000000000"/>
@@ -337,5 +338,6 @@
     <Capability Name="privateNetworkClientServer"/>
     <uap:Capability Name="picturesLibrary"/>
     <uap:Capability Name="removableStorage"/>
+    <rescap:Capability Name="broadFileSystemAccess" />
   </Capabilities>
 </Package>
