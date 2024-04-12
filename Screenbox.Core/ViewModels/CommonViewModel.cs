@@ -9,6 +9,7 @@ using Screenbox.Core.Messages;
 using Screenbox.Core.Services;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Windows.Storage;
 using Windows.UI.Xaml;
@@ -98,6 +99,34 @@ namespace Screenbox.Core.ViewModels
                 new NavigationMetadata(typeof(MusicPageViewModel), artist));
         }
 
+        public List<IStorageItem> GetItemsAfterMatch(IReadOnlyList<IStorageItem>? items, StorageFile file)
+        {
+            if (items == null)
+            {
+                return new List<IStorageItem> { file };
+            }
+            int matchIndex = -1;
+            for (int i = 0; i < items.Count; i++)
+            {
+                if (items[i] is StorageFile storageFile && storageFile.Path == file.Path)
+                {
+                    matchIndex = i;
+                    break;
+                }
+            }
+
+            if (matchIndex == -1)
+            {
+                // 如果没有找到匹配的文件，则返回空列表
+                return new List<IStorageItem> { file };
+            }
+            else
+            {
+                // 返回匹配项及其后续的所有项
+                return items.Skip(matchIndex).ToList();
+            }
+        }
+
         [RelayCommand]
         private async Task OpenFilesAsync()
         {
@@ -105,7 +134,37 @@ namespace Screenbox.Core.ViewModels
             {
                 IReadOnlyList<StorageFile>? files = await _filesService.PickMultipleFilesAsync();
                 if (files == null || files.Count == 0) return;
-                Messenger.Send(new PlayMediaMessage(files));
+                if (files.Count == 1)
+                {
+                    StorageFile file = files[0];
+                    string parentFolderPath = System.IO.Path.GetDirectoryName(file.Path);
+                    if (!string.IsNullOrEmpty(parentFolderPath))
+                    {
+                        StorageFolder? folder = await StorageFolder.GetFolderFromPathAsync(parentFolderPath);
+                        if (folder == null)
+                        {
+                            Messenger.Send(new PlayMediaMessage(files));
+                            return;
+                        }
+                        IReadOnlyList<IStorageItem> items = await _filesService.GetSupportedItems(folder).GetItemsAsync();
+                        IStorageFile[] newFiles = items.OfType<IStorageFile>().ToArray();
+                        if (newFiles.Length == 0) 
+                        {
+                            Messenger.Send(new PlayMediaMessage(files));
+                        } else
+                        {
+                            List<IStorageItem> newItems = GetItemsAfterMatch(newFiles, file);
+                            Messenger.Send(new PlayMediaMessage(newItems));
+                        }
+                    } else
+                    {
+                        Messenger.Send(new PlayMediaMessage(files));
+                    }
+                }
+                else
+                {
+                    Messenger.Send(new PlayMediaMessage(files));
+                }
             }
             catch (Exception e)
             {

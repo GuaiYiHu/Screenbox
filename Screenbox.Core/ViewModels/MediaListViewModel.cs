@@ -23,6 +23,8 @@ using Windows.Media.Playback;
 using Windows.Storage;
 using Windows.Storage.Search;
 using Windows.System;
+using Windows.UI.Xaml.Controls;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace Screenbox.Core.ViewModels
 {
@@ -126,6 +128,34 @@ namespace Screenbox.Core.ViewModels
             });
         }
 
+        public List<IStorageItem> GetItemsAfterMatch(IReadOnlyList<IStorageItem>? items, IStorageItem file)
+        {
+            if (items == null)
+            {
+                return new List<IStorageItem> { file };
+            }
+            int matchIndex = -1;
+            for (int i = 0; i < items.Count; i++)
+            {
+                if (items[i] is StorageFile storageFile && storageFile.Path == file.Path)
+                {
+                    matchIndex = i;
+                    break;
+                }
+            }
+
+            if (matchIndex == -1)
+            {
+                // 如果没有找到匹配的文件，则返回空列表
+                return new List<IStorageItem> { file };
+            }
+            else
+            {
+                // 返回匹配项及其后续的所有项
+                return items.Skip(matchIndex).ToList();
+            }
+        }
+
         public async void Receive(PlayFilesWithNeighborsMessage message)
         {
             IReadOnlyList<IStorageItem> files = message.Value;
@@ -135,16 +165,93 @@ namespace Screenbox.Core.ViewModels
                 _neighboringFilesQuery = await _filesService.GetNeighboringFilesQueryAsync(file);
             }
 
-            if (_mediaPlayer == null)
+            if (files.Count == 1)
             {
-                _delayPlay = files;
+                IStorageItem fileItem = files[0];
+                string parentFolderPath = System.IO.Path.GetDirectoryName(fileItem.Path);
+                if (!string.IsNullOrEmpty(parentFolderPath))
+                {
+                    StorageFolder? folder = await StorageFolder.GetFolderFromPathAsync(parentFolderPath);
+                    if (folder == null)
+                    {
+                        if (_mediaPlayer == null)
+                        {
+                            _delayPlay = files;
+                        }
+                        else
+                        {
+                            ClearPlaylist();
+                            MediaViewModel? next = await EnqueueAsync(files);
+                            if (next != null)
+                                PlaySingle(next);
+
+                        }
+                        return;
+                    }
+                    IReadOnlyList<IStorageItem> items = await _filesService.GetSupportedItems(folder).GetItemsAsync();
+                    IStorageFile[] newFiles = items.OfType<IStorageFile>().ToArray();
+                    if (newFiles.Length == 0)
+                    {
+                        if (_mediaPlayer == null)
+                        {
+                            _delayPlay = files;
+                        }
+                        else
+                        {
+                            ClearPlaylist();
+                            MediaViewModel? next = await EnqueueAsync(files);
+                            if (next != null)
+                                PlaySingle(next);
+
+                        }
+                    }
+                    else
+                    {
+                        List<IStorageItem> newItems = GetItemsAfterMatch(newFiles, fileItem);
+                        if (_mediaPlayer == null)
+                        {
+                            _delayPlay = newItems;
+                        }
+                        else
+                        {
+                            ClearPlaylist();
+                            MediaViewModel? next = await EnqueueAsync(newItems);
+                            if (next != null)
+                                PlaySingle(next);
+
+                        }
+                    }
+                }
+                else
+                {
+                    if (_mediaPlayer == null)
+                    {
+                        _delayPlay = files;
+                    }
+                    else
+                    {
+                        ClearPlaylist();
+                        MediaViewModel? next = await EnqueueAsync(files);
+                        if (next != null)
+                            PlaySingle(next);
+
+                    }
+                }
             }
             else
             {
-                ClearPlaylist();
-                MediaViewModel? next = await EnqueueAsync(files);
-                if (next != null)
-                    PlaySingle(next);
+                if (_mediaPlayer == null)
+                {
+                    _delayPlay = files;
+                }
+                else
+                {
+                    ClearPlaylist();
+                    MediaViewModel? next = await EnqueueAsync(files);
+                    if (next != null)
+                        PlaySingle(next);
+
+                }
             }
         }
 
