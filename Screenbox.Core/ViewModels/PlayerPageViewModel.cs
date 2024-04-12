@@ -231,6 +231,16 @@ namespace Screenbox.Core.ViewModels
             return true;
         }
 
+        public void OnPlayerLongPressed()
+        {
+            Messenger.Send(new TogglePlaySpeedMessage(true));
+        }
+
+        public void OnPlayerLongReleased()
+        {
+            Messenger.Send(new TogglePlaySpeedMessage(false));
+        }
+
         public void OnPointerMoved()
         {
             if (_visibilityOverride) return;

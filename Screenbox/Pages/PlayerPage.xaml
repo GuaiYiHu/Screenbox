@@ -322,7 +322,7 @@
             VerticalAlignment="Stretch"
             ButtonMargin="0,52,0,84"
             PointerPressed="VideoView_PointerPressed"
-            ContextFlyout="{x:Bind PlayerControls.PlayerContextMenu}"
+            PointerReleased="VideoView_PointerReleased"
             ManipulationCompleted="VideoView_OnManipulationCompleted">
             <interactivity:Interaction.Behaviors>
                 <core:EventTriggerBehavior EventName="DoubleTapped">

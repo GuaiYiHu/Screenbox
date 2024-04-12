@@ -10,11 +10,13 @@ using Screenbox.Core.ViewModels;
 using System;
 using System.ComponentModel;
 using System.Threading;
+using System.Threading.Tasks;
 using Windows.ApplicationModel.Core;
 using Windows.ApplicationModel.DataTransfer;
 using Windows.System;
 using Windows.UI;
 using Windows.UI.Core;
+using Windows.UI.Popups;
 using Windows.UI.ViewManagement;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
@@ -45,6 +47,8 @@ namespace Screenbox.Pages
         private readonly ThemeListener _themeListener;
         private CancellationTokenSource? _animationCancellationTokenSource;
         private bool _startup;
+
+        private CancellationTokenSource? _longPressCancellationTokenSource;
 
         public PlayerPage()
         {
@@ -433,7 +437,7 @@ namespace Screenbox.Pages
             }
         }
 
-        private void VideoView_PointerPressed(object sender, PointerRoutedEventArgs e)
+        private async void VideoView_PointerPressed(object sender, PointerRoutedEventArgs e)
         {
             if (e.Pointer.PointerDeviceType == Windows.Devices.Input.PointerDeviceType.Mouse)
             {
@@ -447,6 +451,30 @@ namespace Screenbox.Pages
             {
                 PlayerControls.FocusFirstButton();
             }
+
+            // 开始计时长按时间
+            _longPressCancellationTokenSource = new CancellationTokenSource();
+            var cancellationToken = _longPressCancellationTokenSource.Token;
+            try
+            {
+                await Task.Delay(250, cancellationToken); // 长按时间设定为250毫秒
+                                                           // 如果在延迟结束前未取消长按操作，则执行长按操作
+                if (!cancellationToken.IsCancellationRequested)
+                {
+                    ViewModel.OnPlayerLongPressed();
+                }
+            }
+            catch (TaskCanceledException)
+            {
+                // 如果在延迟期间取消了长按操作，则不执行任何操作
+            }
+        }
+
+        private void VideoView_PointerReleased(object sender, PointerRoutedEventArgs e)
+        {
+            ViewModel.OnPlayerLongReleased();
+            // 取消长按计时
+            _longPressCancellationTokenSource?.Cancel();
         }
 
         private void OnDragOver(object sender, DragEventArgs e)
