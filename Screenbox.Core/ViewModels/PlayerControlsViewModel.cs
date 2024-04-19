@@ -149,7 +149,7 @@ namespace Screenbox.Core.ViewModels
             if (!HasActiveItem || _mediaPlayer == null) return;
             if (message.SpeedUp)
             {
-                _mediaPlayer.PlaybackRate = 1.5;
+                _mediaPlayer.PlaybackRate = 2;
             }
             else
             {
