@@ -452,15 +452,19 @@ namespace Screenbox.Pages
                 PlayerControls.FocusFirstButton();
             }
 
+            ViewModel.OnPlayerPressed();
+
             // 开始计时长按时间
             _longPressCancellationTokenSource = new CancellationTokenSource();
             var cancellationToken = _longPressCancellationTokenSource.Token;
             try
             {
-                await Task.Delay(250, cancellationToken); // 长按时间设定为250毫秒
-                                                           // 如果在延迟结束前未取消长按操作，则执行长按操作
+                await Task.Delay(500, cancellationToken); // 长按时间设定为500毫秒
+                                                          // 如果在延迟结束前未取消长按操作，则执行长按操作
                 if (!cancellationToken.IsCancellationRequested)
                 {
+                    ViewModel.SetLongClicking(true);
+                    ViewModel.TryHideControls(true);
                     ViewModel.OnPlayerLongPressed();
                 }
             }
@@ -473,6 +477,7 @@ namespace Screenbox.Pages
         private void VideoView_PointerReleased(object sender, PointerRoutedEventArgs e)
         {
             ViewModel.OnPlayerLongReleased();
+            ViewModel.SetLongClicking(false);
             // 取消长按计时
             _longPressCancellationTokenSource?.Cancel();
         }

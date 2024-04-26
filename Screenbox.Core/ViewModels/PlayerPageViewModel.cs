@@ -36,7 +36,8 @@ namespace Screenbox.Core.ViewModels
         IRecipient<PlaylistCurrentItemChangedMessage>,
         IRecipient<ShowPlayPauseBadgeMessage>,
         IRecipient<OverrideControlsHideDelayMessage>,
-        IRecipient<PropertyChangedMessage<NavigationViewDisplayMode>>
+        IRecipient<PropertyChangedMessage<NavigationViewDisplayMode>>,
+        IRecipient<SlideMessage>
     {
         [ObservableProperty] private bool _controlsHidden;
         [ObservableProperty] private string? _statusMessage;
@@ -73,7 +74,9 @@ namespace Screenbox.Core.ViewModels
         private IMediaPlayer? _mediaPlayer;
         private bool _visibilityOverride;
         private bool _resizeNext;
+        private bool _sliding;
         private DateTimeOffset _lastUpdated;
+        private bool _longClicking;
 
         public PlayerPageViewModel(IWindowService windowService, IResourceService resourceService, ISettingsService settingsService, IFilesService filesService)
         {
@@ -231,9 +234,17 @@ namespace Screenbox.Core.ViewModels
             return true;
         }
 
+        public void OnPlayerPressed()
+        {
+            Messenger.Send(new SlideMessage(false));
+        }
+
         public void OnPlayerLongPressed()
         {
-            Messenger.Send(new TogglePlaySpeedMessage(true));
+            if (!_sliding)
+            {
+                Messenger.Send(new TogglePlaySpeedMessage(true));
+            }
         }
 
         public void OnPlayerLongReleased()
@@ -243,7 +254,7 @@ namespace Screenbox.Core.ViewModels
 
         public void OnPointerMoved()
         {
-            if (_visibilityOverride) return;
+            if (_visibilityOverride || _longClicking) return;
             ControlsHidden = false;
 
             if (SeekBarPointerInteracting) return;
@@ -574,6 +585,11 @@ namespace Screenbox.Core.ViewModels
             _controlsVisibilityTimer.Debounce(() => TryHideControls(), TimeSpan.FromSeconds(delayInSeconds));
         }
 
+        public void SetLongClicking(bool longClicking)
+        {
+            _longClicking = longClicking;
+        }
+
         private void OverrideControlsDelayHide(int delay = 400)
         {
             _visibilityOverride = true;
@@ -691,6 +707,11 @@ namespace Screenbox.Core.ViewModels
             }
 
             return false;
+        }
+
+        public void Receive(SlideMessage message)
+        {
+            _sliding = message.Slide;
         }
     }
 }
