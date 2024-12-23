@@ -25,6 +25,7 @@ namespace Screenbox.Core.ViewModels
         IRecipient<MediaPlayerChangedMessage>,
         IRecipient<SettingsChangedMessage>,
         IRecipient<TogglePlayPauseMessage>,
+        IRecipient<TogglePlaySpeedMessage>,
         IRecipient<PropertyChangedMessage<PlayerVisibilityState>>
     {
         public MediaListViewModel Playlist { get; }
@@ -139,6 +140,20 @@ namespace Screenbox.Core.ViewModels
             else
             {
                 PlayPause();
+            }
+
+        }
+
+        public void Receive(TogglePlaySpeedMessage message)
+        {
+            if (!HasActiveItem || _mediaPlayer == null) return;
+            if (message.SpeedUp)
+            {
+                _mediaPlayer.PlaybackRate = 2;
+            }
+            else
+            {
+                _mediaPlayer.PlaybackRate = 1.0;
             }
 
         }

@@ -177,11 +177,16 @@ namespace Screenbox.Core.ViewModels
             message.Reply(new PlaylistInfo(Items, CurrentItem, CurrentIndex, _lastUpdated));
         }
 
-        public void Receive(PlayMediaMessage message)
+        public async void Receive(PlayMediaMessage message)
         {
+            if (message?.Value is MediaViewModel viewModel && viewModel.Source is StorageFile file && _neighboringFilesQuery == null)
+            {
+                _neighboringFilesQuery = await _filesService.GetNeighboringFilesQueryAsync(file);
+            }
+
             if (_mediaPlayer == null)
             {
-                _delayPlay = message.Value;
+                _delayPlay = message?.Value;
                 return;
             }
 
@@ -191,9 +196,9 @@ namespace Screenbox.Core.ViewModels
             }
             else
             {
-                _lastUpdated = message.Value;
+                _lastUpdated = message?.Value;
                 ClearPlaylist();
-                EnqueueAndPlay(message.Value);
+                EnqueueAndPlay(message?.Value);
             }
         }
 
@@ -664,7 +669,7 @@ namespace Screenbox.Core.ViewModels
                         sender.Position = TimeSpan.Zero;
                         break;
                     default:
-                        if (Items.Count > 1) _ = NextAsync();
+                        NextAsync();
                         break;
                 }
             });

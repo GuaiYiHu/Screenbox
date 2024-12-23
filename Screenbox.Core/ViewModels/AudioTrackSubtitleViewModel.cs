@@ -69,11 +69,15 @@ namespace Screenbox.Core.ViewModels
 
             StorageFileQueryResult? query = await _filesService.GetNeighboringFilesQueryAsync(file, options);
             if (query == null) return;
-            IReadOnlyList<StorageFile> subtitles = await query.GetFilesAsync(0, 1);
+            // Get all subtitles
+            IReadOnlyList<StorageFile> subtitles = await query.GetFilesAsync();
             if (subtitles.Count <= 0) return;
-            StorageFile subtitle = subtitles[0];
-            // Preload subtitle but don't select it
-            _mediaPlayer.AddSubtitle(subtitle, false);
+            for (int i = 0; i < subtitles.Count; i++)
+            {
+                StorageFile subtitle = subtitles[i];
+                // Preload first local subtitle
+                _mediaPlayer.AddSubtitle(subtitle, i == 0);
+            }
         }
 
         partial void OnSubtitleTrackIndexChanged(int value)

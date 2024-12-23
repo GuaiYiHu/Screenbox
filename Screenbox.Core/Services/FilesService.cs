@@ -25,10 +25,22 @@ namespace Screenbox.Core.Services
         {
             try
             {
-                StorageFolder? parent = await file.GetParentAsync();
-                options ??= new QueryOptions(CommonFileQuery.DefaultQuery, FilesHelpers.SupportedFormats);
-                StorageFileQueryResult? queryResult = parent?.CreateFileQueryWithOptions(options);
-                return queryResult;
+                // 获取文件的父目录路径
+                string parentFolderPath = System.IO.Path.GetDirectoryName(file.Path);
+
+                if (!string.IsNullOrEmpty(parentFolderPath))
+                {
+                    // 创建对应的 StorageFolder 对象
+                    StorageFolder parent = await StorageFolder.GetFolderFromPathAsync(parentFolderPath);
+                    options ??= new QueryOptions(CommonFileQuery.DefaultQuery, FilesHelpers.SupportedFormats);
+                    StorageFileQueryResult? queryResult = parent?.CreateFileQueryWithOptions(options);
+                    return queryResult;
+                }
+                else
+                {
+                    // 文件没有父目录（例如位于根目录下）
+                    return null;
+                }
             }
             catch (Exception)
             {

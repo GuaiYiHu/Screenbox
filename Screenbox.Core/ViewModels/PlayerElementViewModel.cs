@@ -26,7 +26,8 @@ namespace Screenbox.Core.ViewModels
     public sealed partial class PlayerElementViewModel : ObservableRecipient,
         IRecipient<ChangeAspectRatioMessage>,
         IRecipient<SettingsChangedMessage>,
-        IRecipient<MediaPlayerRequestMessage>
+        IRecipient<MediaPlayerRequestMessage>,
+        IRecipient<TogglePlaySpeedMessage>
     {
         public MediaPlayer? VlcPlayer { get; private set; }
 
@@ -44,6 +45,7 @@ namespace Screenbox.Core.ViewModels
         private TimeSpan _timeBeforeManipulation;
         private bool _playerSeekGesture;
         private bool _playerVolumeGesture;
+        private bool _playerLongClicked;
 
         public PlayerElementViewModel(
             LibVlcService libVlcService,
@@ -153,18 +155,19 @@ namespace Screenbox.Core.ViewModels
 
             if ((_manipulationLock == ManipulationLock.Vertical ||
                 _manipulationLock == ManipulationLock.None && Math.Abs(verticalCumulative) >= 50) &&
-                _playerVolumeGesture)
+                _playerVolumeGesture && !_playerLongClicked)
             {
                 _manipulationLock = ManipulationLock.Vertical;
                 int volume = Messenger.Send(new ChangeVolumeRequestMessage((int)-verticalChange, true));
                 Messenger.Send(new UpdateVolumeStatusMessage(volume));
+                Messenger.Send(new SlideMessage(true));
                 return;
             }
 
             if ((_manipulationLock == ManipulationLock.Horizontal ||
                  _manipulationLock == ManipulationLock.None && Math.Abs(horizontalCumulative) >= 50) &&
                 (_mediaPlayer?.CanSeek ?? false) &&
-                _playerSeekGesture)
+                _playerSeekGesture && !_playerLongClicked)
             {
                 _manipulationLock = ManipulationLock.Horizontal;
                 Messenger.Send(new TimeChangeOverrideMessage(true));
@@ -175,6 +178,7 @@ namespace Screenbox.Core.ViewModels
                 if (changeText[0] != '-') changeText = '+' + changeText;
                 string status = $"{Humanizer.ToDuration(newTime)} ({changeText})";
                 Messenger.Send(new UpdateStatusMessage(status));
+                Messenger.Send(new SlideMessage(true));
             }
         }
 
@@ -293,6 +297,11 @@ namespace Screenbox.Core.ViewModels
             {
                 tracker.RequestRelease();
             }
+        }
+
+        public void Receive(TogglePlaySpeedMessage message)
+        {
+            _playerLongClicked = message.SpeedUp;
         }
     }
 }
